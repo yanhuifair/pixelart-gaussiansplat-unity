@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0] - 2026-11-23
+
+The browser viewer's settings panel, in the engine.
+
+- `PixelArtHud`: the same look/view panel (pixel size, dither, light, light bands, palette, hard
+  pixels, 2x2 supersample, outline, auto orbit), drawn over the game view, editing the same fields.
+  H hides it; Q / X / S / E / O flip the switches, the site's keys.
+- Ranges follow the site: `pixelSize` 1..8, `exposure` 0.5..2.5, `bands` 0..8.
+- The sample camera carries the hud.
+
 ## [1.1.0] - 2026-11-23
 
 The demo and the showcase are now the caravan camp, the same world the Godot addon ships.

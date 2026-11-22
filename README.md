@@ -62,7 +62,7 @@ Everything on `Pixel Art Settings`:
 
 | Field | What it does |
 |---|---|
-| `pixelSize` | Screen pixels per art pixel. Fixed to the screen: zooming changes what is in a pixel, never its size. |
+| `pixelSize` | Screen pixels per art pixel (1..8). Fixed to the screen: zooming changes what is in a pixel, never its size. |
 | `supersample` | Draw at 2× the art resolution: four samples per pixel, which the pass votes over. Off = one sample, harder edges, cheaper. |
 | `crisp` | Hard-edged discs + nearest-sampled palette colours. Off = soft Gaussians, blended classically. |
 | `outline` | A solid pixel next to the background takes a darker ink of its own colour. |
@@ -73,6 +73,11 @@ Everything on `Pixel Art Settings`:
 
 `Splat Renderer` holds the cloud plus live-lighting knobs (`exposure`, `bands` for cel steps, `fog`,
 `cullBackfaces`) that only matter for splats that are not baked — imported meshes, mostly.
+
+The same panel the [browser viewer](https://splats.cobanov.dev/) puts over the picture comes with the
+package: add `Pixel Art Hud` to the camera. It draws in the game view (edit mode too), writes the
+same fields above, and uses the site's keys — **H** hides it, **Q** palette, **X** hard pixels,
+**S** 2×2 supersample, **E** outline, **O** auto orbit.
 
 ## Authoring
 
@@ -96,7 +101,7 @@ Three ways to get splats:
 
 ```
 Runtime/   Surfel, SplatCloudAsset, SplatRenderer, PixelArtPalette, PixelArtSettings,
-           PixelArtSplatFeature (the renderer feature and its pass), OrbitCamera
+           PixelArtSplatFeature (the renderer feature and its pass), OrbitCamera, PixelArtHud
 Editor/    Sdf + Shape + SurfaceSampler, HelloScene (scene from code), LightBaker,
            SurfelBaker (assets + meshes), DioImport (.dio / .bytes), CaravanDemo (the sample),
            PixelArtSetup (menus)

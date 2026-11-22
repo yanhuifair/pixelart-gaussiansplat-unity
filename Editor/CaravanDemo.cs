@@ -88,6 +88,9 @@ namespace PixelArtSplats.EditorTools
             settings.quantise = true;
             settings.dither = 0f;
 
+            // the same panel the browser viewer shows; H hides it
+            camGo.AddComponent<PixelArtHud>();
+
             var orbit = camGo.AddComponent<OrbitCamera>();
             orbit.target = new Vector3(0f, -0.02f, 0f);
             orbit.distance = 9f;

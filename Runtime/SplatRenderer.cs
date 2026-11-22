@@ -16,10 +16,10 @@ namespace PixelArtSplats
         public SplatCloudAsset cloud;
 
         [Header("Live light (baked clouds ignore this)")]
-        [Range(0f, 4f)] public float exposure = 1f;
+        [Range(0.5f, 2.5f)] public float exposure = 1f;
 
         [Tooltip("Flat light steps for cel shading on live-lit splats. 0 = smooth.")]
-        [Range(0, 12)] public int bands = 5;
+        [Range(0, 8)] public int bands = 5;
 
         [Tooltip("Distance over which splats fade into the background.")]
         public Vector2 fog = new Vector2(3f, 6f);
