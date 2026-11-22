@@ -10,7 +10,7 @@ palette, no soft splat mush.
 
 | | |
 |---|---|
-| ![Caravan camp](Documentation~/caravan.png) | Caravan camp, 147 769 surfels, baked lighting, 16 colours — the same world the [Godot addon](https://github.com/yanhuifair/pixelart-splats-godot) ships. |
+| ![Caravan camp](Documentation~/caravan.png) | Caravan camp, 147 769 surfels, baked lighting, 16 colours — the same world the [Godot addon](https://github.com/yanhuifair/pixelart-gaussiansplat-godot) ships. |
 
 ## Install
 
@@ -20,13 +20,13 @@ the pass replaces the whole picture at the end of the frame.
 **Git URL** — Package Manager → `+` → *Add package from git URL…*:
 
 ```
-https://github.com/yanhuifair/pixelart-splats-unity.git
+https://github.com/yanhuifair/pixelart-gaussiansplat-unity.git
 ```
 
 Pin a version by appending `#v1.1.0`.
 
 **Tarball** — grab `com.fair.pixelart-splats-1.1.0.tgz` from the
-[releases](https://github.com/yanhuifair/pixelart-splats-unity/releases) page, then
+[releases](https://github.com/yanhuifair/pixelart-gaussiansplat-unity/releases) page, then
 *Add package from tarball…*.
 
 **Embedded** — clone this repository into your project's `Packages/` folder (or copy the folder
