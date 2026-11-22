@@ -36,7 +36,9 @@ that do not have `Pixel Art Settings`, so it is safe to leave installed.
    the background must be one of the surface colours.
 2. Put `Pixel Art Settings` on the camera and assign the palette.
 3. Put `Splat Renderer` on a GameObject and give it a splat cloud. No cloud yet? Use the sample, or:
-   - `Pixel Art Splats → Demo → Build Hello Island` — builds the sample scene from code (~15 s)
+   - `Pixel Art Splats → Demo → Build Caravan Camp…` — rebuilds the sample from its `.dio` (~20 s)
+   - select a `.dio` or `.bytes` → `Pixel Art Splats → Bake → Import .dio Or .bytes As Splat Cloud…`
+   - `Editor/HelloScene.cs` still shows the scene-from-code path (SDF shapes, sampler, baked lighting)
    - select a mesh → `Pixel Art Splats → Bake → Bake Selected Meshes To Splat Cloud`
 4. Press Play. Drag to orbit, scroll to zoom.
 
@@ -103,7 +105,7 @@ Runtime/   Surfel, SplatCloudAsset, SplatRenderer, PixelArtPalette, PixelArtSett
            PixelArtSplatFeature, OrbitCamera        → PixelArtSplats.Runtime.dll
 Editor/    SdfTools, HelloScene, LightBaker, SurfelBaker, PixelArtSetup → PixelArtSplats.Editor.dll
 Shaders/   SurfelSplat (+ .hlsl), PixelArtComposite
-Samples~/  Hello Island
+Samples~/  Caravan Camp
 ```
 
 ## Limits
