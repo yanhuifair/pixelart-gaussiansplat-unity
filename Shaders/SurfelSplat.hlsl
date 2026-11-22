@@ -50,6 +50,18 @@ float _PS_Time;
 #define PS_UP_NORMAL 16u
 #define PS_SWAY      32u
 
+// what the renderer animates, in flags bits 16..23 (see DioImport.AddParticles)
+#define PS_M_RISE     1
+#define PS_M_FLOAT    2
+#define PS_M_BLINK    3
+#define PS_M_TWINKLE  4
+#define PS_M_DRIFT    5
+#define PS_M_SMOKE    7
+#define PS_M_FOG      8
+#define PS_M_SHAFT    9
+#define PS_M_RAY     10
+#define PS_M_PULSE   11
+
 // brightness = ambient (darker from below, lighter from above) + key light
 #define AMBIENT_LOW  0.36
 #define AMBIENT_HIGH 0.58
@@ -61,6 +73,96 @@ struct Varyings
     float2 uv : TEXCOORD0;
     float4 color : TEXCOORD1;   // rgb + alpha, kept in one float4: float3 varyings get padded
 };
+
+// three stable random numbers per splat: the hash the browser uses (src/render/particles.js)
+float3 Hash31(float p)
+{
+    float3 p3 = frac(float3(p, p, p) * float3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return frac((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+// The moving things: embers, smoke, fireflies, drifting sand. Port of particles.js, driven by the
+// splat's index so nothing moves on the CPU. Motion id in flags bits 16..23, one parameter in 24..31.
+void AnimateSurfel(uint flags, uint index, float t, inout float3 centre, inout float3 axis1,
+                   inout float3 axis2, inout float alpha)
+{
+    int mode = (int)((flags >> 16) & 0xFFu);
+    if (mode == 0) return;
+
+    float3 r = Hash31((float)index + 3.0);
+    float par = ((flags >> 24) & 0xFFu) * (4.0 / 255.0);
+    float k;
+    float grow;
+
+    if (mode == PS_M_RISE)
+    {
+        k = frac(t * 0.22 * (0.6 + r.x) + r.y);
+        centre.y += k * par;
+        centre.x += 0.07 * sin(k * 9.0 + r.z * 40.0) * k;
+        centre.z += 0.07 * cos(k * 7.0 + r.x * 40.0) * k;
+        grow = 1.0 - 0.6 * k;
+        axis1 *= grow; axis2 *= grow;
+        alpha *= smoothstep(0.0, 0.05, k) * (1.0 - smoothstep(0.55, 1.0, k));
+    }
+    else if (mode == PS_M_SMOKE)
+    {
+        k = frac(t * 0.09 * (0.6 + r.x) + r.y);
+        centre.y += k * par;
+        centre.x += 0.12 * k * sin(k * 6.0 + r.z * 40.0) + 0.12 * k * k;
+        centre.z += 0.1 * k * cos(k * 5.0 + r.x * 40.0);
+        grow = 1.0 + 3.0 * k;
+        axis1 *= grow; axis2 *= grow;
+        alpha *= smoothstep(0.0, 0.08, k) * (1.0 - smoothstep(0.3, 1.0, k)) * 0.6;
+    }
+    else if (mode == PS_M_BLINK)
+    {
+        centre += 0.12 * float3(sin(t * 0.5 + r.x * 40.0), 0.6 * sin(t * 0.4 + r.y * 40.0),
+                                cos(t * 0.45 + r.z * 40.0));
+        alpha *= smoothstep(0.55, 0.95, sin(t * (0.9 + r.z) + r.x * 60.0));
+    }
+    else if (mode == PS_M_DRIFT)
+    {
+        float radius = par;
+        centre.x = centre.x + t * 0.16 * (0.5 + r.x) + radius;
+        centre.x = centre.x - floor(centre.x / (2.0 * radius)) * 2.0 * radius - radius;
+        centre.y += 0.03 * sin(t * 1.3 + r.y * 30.0);
+        alpha *= smoothstep(0.0, 0.25, radius - abs(centre.x));
+    }
+    else if (mode == PS_M_TWINKLE)
+    {
+        alpha *= smoothstep(0.6, 0.98, sin(t * (0.7 + r.z * 1.3) + r.x * 60.0));
+    }
+    else if (mode == PS_M_PULSE)
+    {
+        grow = 0.93 + 0.07 * sin(t * 7.0 + r.x * 20.0);
+        axis1 *= grow; axis2 *= grow;
+    }
+    else if (mode == PS_M_FLOAT)
+    {
+        centre += 0.07 * float3(sin(t * 0.3 + r.x * 40.0), sin(t * 0.22 + r.y * 40.0),
+                                cos(t * 0.27 + r.z * 40.0));
+        alpha *= 0.35 + 0.65 * smoothstep(0.2, 0.9, sin(t * (0.3 + r.z * 0.4) + r.x * 60.0) * 0.5 + 0.5);
+    }
+    else if (mode == PS_M_FOG)
+    {
+        centre.x += 0.25 * sin(t * 0.12 + r.x * 40.0);
+        centre.z += 0.25 * cos(t * 0.1 + r.y * 40.0);
+        centre.y += 0.04 * sin(t * 0.3 + r.z * 30.0);
+        alpha *= 0.55 + 0.45 * sin(t * 0.25 + r.z * 50.0);
+    }
+    else if (mode == PS_M_SHAFT)
+    {
+        centre.x += 0.08 * sin(t * 0.15 + r.x * 20.0);
+        alpha *= 0.5 + 0.5 * sin(t * 0.4 + r.y * 50.0);
+    }
+    else if (mode == PS_M_RAY)
+    {
+        centre.x += 0.025 * sin(t * 0.21 + r.x * 6.0);
+        centre.z += 0.02 * cos(t * 0.17 + r.x * 6.0);
+        alpha *= 0.8 + 0.2 * sin(t * 0.5 + r.y * 50.0);
+    }
+}
 
 float3 SwayOffset(SurfelData s)
 {
@@ -126,11 +228,11 @@ float3 ShadeSurfel(SurfelData s, float3 pWS, float3 cWS, float3 camPos, out floa
 }
 
 // Where the quad's corners go, and whether the splat is worth drawing at all.
-bool ProjectSurfel(SurfelData s, float2 uv, float3 camPos, out float4 positionCS)
+bool ProjectSurfel(SurfelData s, float3 centre, float3 axis1, float3 axis2, float2 uv, float3 camPos,
+                   out float4 positionCS)
 {
     uint kind = s.flags & 0xFFu;
 
-    float3 centre = s.pos + (((kind & PS_SWAY) != 0) ? SwayOffset(s) : 0.0);
     float3 cWS = mul(_PS_ObjToWorld, float4(centre, 1.0)).xyz;
     float4 clipC = mul(_PS_ViewProj, float4(cWS, 1.0));
     positionCS = float4(0.0, 0.0, -2.0, 1.0);
@@ -144,7 +246,7 @@ bool ProjectSurfel(SurfelData s, float2 uv, float3 camPos, out float4 positionCS
     // hide splats facing away, the way the viewer's cull does
     if (_PS_Params.w > 0.5 && !twoSided && !glow && facing < -0.08) return false;
 
-    float3 pObj = centre + uv.x * s.axis1 + uv.y * s.axis2;
+    float3 pObj = centre + uv.x * axis1 + uv.y * axis2;
     float3 pWS = mul(_PS_ObjToWorld, float4(pObj, 1.0)).xyz;
     float4 clipP = mul(_PS_ViewProj, float4(pWS, 1.0));
 
@@ -173,18 +275,24 @@ Varyings VertSurfel(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID
     uint index = instanceID + (uint)_PS_SplatBase;
     SurfelData s = _Surfels[index];
 
-    float3 sway = ((s.flags & PS_SWAY) != 0) ? SwayOffset(s) : 0.0;
-    float3 centre = s.pos + sway;
-    float3 pObj = centre + uv.x * s.axis1 + uv.y * s.axis2;
+    float3 centre = s.pos;
+    float3 axis1 = s.axis1;
+    float3 axis2 = s.axis2;
+    float fade = 1.0;
+    AnimateSurfel(s.flags, index, _PS_Time, centre, axis1, axis2, fade);
+    if ((s.flags & PS_SWAY) != 0) centre += SwayOffset(s);
+
+    float3 pObj = centre + uv.x * axis1 + uv.y * axis2;
     float3 pWS = mul(_PS_ObjToWorld, float4(pObj, 1.0)).xyz;
     float3 cWS = mul(_PS_ObjToWorld, float4(centre, 1.0)).xyz;
     float3 camPos = _PS_CamPos.xyz;
 
     float alpha;
     float3 col = ShadeSurfel(s, pWS, cWS, camPos, alpha);
+    alpha *= fade;
 
     float4 positionCS;
-    if (!ProjectSurfel(s, uv, camPos, positionCS))
+    if (!ProjectSurfel(s, centre, axis1, axis2, uv, camPos, positionCS))
     {
         col = 0.0;
         alpha = 0.0;

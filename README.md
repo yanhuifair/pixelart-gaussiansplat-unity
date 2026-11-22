@@ -10,7 +10,7 @@ palette, no soft splat mush.
 
 | | |
 |---|---|
-| ![Caravan camp](Documentation~/caravan.png) | Caravan camp, 147 769 surfels, baked lighting, 16 colours — the same world the [Godot addon](https://github.com/yanhuifair/pixelart-gaussiansplat-godot) ships. |
+| ![Caravan camp](Documentation~/caravan.png) | Caravan camp: 147 889 surfels, baked lighting, 16 colours, embers and smoke above the fire — the same world the [Godot addon](https://github.com/yanhuifair/pixelart-gaussiansplat-godot) ships. |
 
 ## Install
 
@@ -129,9 +129,19 @@ Shaders/   SurfelSplat (the discs, two passes), PixelArtComposite (the pixel pas
   the install menu is for. Run it after installing.
 - Splats baked inside Unity are in Unity's coordinates; worlds imported from `.dio` are mirrored on
   the way in, so they read the same as they do in the browser or in the Godot addon.
+
+## What moves
+
+A `.dio` world also declares its particles — embers, smoke, fireflies, drifting sand. Those are
+expanded into splats at import, tagged with a motion id in the high bits of their flags, and animated
+**in the vertex shader** from their index and the clock: nothing moves on the CPU, and the cloud stays
+one buffer. The same code animates the scene's own halos, so a fire breathes instead of sitting still.
+
+`PixelArtSplatFeature.TimeOverride` poses that clock at a fixed time, for a look check or a
+screenshot.
 - Ported from [pixelart-gaussiansplat](https://github.com/cobanov/pixelart-gaussiansplat) (three.js +
-  Spark). Not ported: particles, skinned animation, automatic palettes from a model's colours, light
-  shafts data. See `Documentation~/port-notes.md`.
+  Spark). Not ported: the `leaf` and `beam` motions (they want a per-splat centre), skinned animation,
+  automatic palettes from a model's colours. See `Documentation~/port-notes.md`.
 
 ## Shipping your own build
 

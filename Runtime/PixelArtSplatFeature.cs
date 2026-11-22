@@ -31,6 +31,9 @@ namespace PixelArtSplats
         /// <summary>Every instance loaded, so the editor can find one to edit.</summary>
         public static IReadOnlyList<PixelArtSplatFeature> All => s_all;
 
+        /// <summary>Pose the motion at a fixed time, for a look check. Negative follows the clock.</summary>
+        public static float TimeOverride = -1f;
+
         /// <summary>The instance that last drew a picture: the one the panel edits.</summary>
         public static PixelArtSplatFeature LastRendered { get; private set; }
 
@@ -283,7 +286,8 @@ namespace PixelArtSplats
                 cmd.SetGlobalMatrix(IdViewProj, viewProj);
                 cmd.SetGlobalVector(IdCamPos, camPos);
                 cmd.SetGlobalVector(IdLowRes, new Vector4(srcW, srcH, 0, 0));
-                cmd.SetGlobalFloat(IdTime, Application.isPlaying ? Time.time : Time.realtimeSinceStartup);
+                float clock = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
+                cmd.SetGlobalFloat(IdTime, TimeOverride >= 0f ? TimeOverride : clock);
                 GatherLights(cmd);
 
                 for (int i = 0; i < _draw.Count; i++)

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Caravan
   m_EditorClassIdentifier: 
   data: {fileID: 4900000, guid: 07c094194297c4dbca5d6b8cf968cde9, type: 3}
-  count: 147769
+  count: 147889
   opaqueCount: 147760
   spacing: 0.02
   bounds:

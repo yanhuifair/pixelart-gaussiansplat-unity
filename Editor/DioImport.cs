@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using UnityEditor;
@@ -135,7 +136,7 @@ namespace PixelArtSplats.EditorTools
             int freeOff = colOff + n * 4;
             int freeColOff = freeOff + nFree * 40;
 
-            var surfels = new Surfel[n + nFree];
+            var list = new List<Surfel>(n + nFree + 256);
             float radius = Surfel.RadiusPerSpacing * meta.h;
             SurfelFlags baked = meta.baked ? SurfelFlags.Baked : SurfelFlags.None;
 
@@ -152,7 +153,7 @@ namespace PixelArtSplats.EditorTools
                 int c = colOff + i * 4;
                 Vector3 colour = new Vector3(blob[c] / 255f, blob[c + 1] / 255f, blob[c + 2] / 255f);
 
-                surfels[i] = SurfelFactory.Disc(pos, normal, radius, colour, baked);
+                list.Add(SurfelFactory.Disc(pos, normal, radius, colour, baked));
             }
 
             for (int i = 0; i < nFree; i++)
@@ -176,13 +177,271 @@ namespace PixelArtSplats.EditorTools
                 // a blade is lit as if it faced up, and leans in the wind
                 if (kind == FreeKind.Sway) flags |= SurfelFlags.Sway | SurfelFlags.UpNormal;
 
-                surfels[n + i] = SurfelFactory.Scaled(pos, scale, rot, colour, flags, alpha);
+                list.Add(SurfelFactory.Scaled(pos, scale, rot, colour, flags, alpha));
             }
+
+            AddParticles(list, json, meta);
 
             // the browser and Godot are right handed, Unity is left handed: mirror x so a scene comes
             // out the same way round here as it does there
+            Surfel[] surfels = list.ToArray();
             for (int i = 0; i < surfels.Length; i++) surfels[i] = Mirrored(surfels[i]);
             return surfels;
+        }
+
+
+        // ---- particles ------------------------------------------------------------
+        // A .dio declares its moving things under "particles": embers, smoke, fireflies, drifting sand.
+        // They are generated the way the browser generates them — the same lcg, called in the same
+        // order — and the renderer animates each one from its index, so nothing moves on the CPU.
+
+        enum Motion
+        {
+            None = 0, Rise = 1, Float = 2, Blink = 3, Twinkle = 4, Drift = 5, Leaf = 6,
+            Smoke = 7, Fog = 8, Shaft = 9, Ray = 10, Pulse = 11,
+        }
+
+        static int MotionId(string mode) => mode switch
+        {
+            "rise" => (int)Motion.Rise,
+            "float" => (int)Motion.Float,
+            "blink" => (int)Motion.Blink,
+            "twinkle" => (int)Motion.Twinkle,
+            "drift" => (int)Motion.Drift,
+            "leaf" => (int)Motion.Leaf,
+            "smoke" => (int)Motion.Smoke,
+            "fog" => (int)Motion.Fog,
+            "shaft" => (int)Motion.Shaft,
+            "ray" => (int)Motion.Ray,
+            "pulse" => (int)Motion.Pulse,
+            _ => 0,
+        };
+
+        /// <summary>The browser's lcg: same seed, same sequence, same specks.</summary>
+        sealed class Rng
+        {
+            uint _state;
+            public Rng(uint seed) { _state = seed; }
+            public float Next()
+            {
+                _state = unchecked(_state * 1664525u + 1013904223u);
+                return (float)(_state / 4294967296.0);
+            }
+        }
+
+        static uint ParamByte(float value) =>
+            (uint)Mathf.Clamp(Mathf.RoundToInt(value / 4f * 255f), 0, 255);
+
+        static void AddParticles(List<Surfel> into, string json, Meta meta)
+        {
+            int at = json.IndexOf("\"particles\"", StringComparison.Ordinal);
+            if (at < 0) return;
+            int bracket = json.IndexOf('[', at);
+            if (bracket < 0) return;
+            if (!(MiniJson.Value(json.Substring(bracket)) is List<object> groups)) return;
+
+            var rng = new Rng(99);
+            foreach (object entry in groups)
+            {
+                if (!(entry is Dictionary<string, object> ps)) continue;
+
+                string mode = Flag(ps, "still") ? "twinkle" : Text(ps, "mode");
+                int motion = MotionId(mode);
+                // leaf would need a per-splat centre; the format does not carry one yet
+                if (motion == 0 || motion == (int)Motion.Leaf) continue;
+
+                int count = Mathf.Max(1, Mathf.RoundToInt(Number(ps, "n", 0f)));
+                float[] centre = Vector(ps, "center") ?? new float[3];
+                float[] spread = Vector(ps, "spread");
+                List<object> origins = List(ps, "origins");
+                List<object> points = List(ps, "points");
+                string[] colours = Texts(ps, "colors");
+                if (colours.Length == 0) continue;
+
+                float alpha = Number(ps, "alpha", 0.95f);
+                bool halo = Flag(ps, "halo");
+                float height = spread != null ? spread[1] : Number(ps, "height", 0.6f);
+                float param = motion == (int)Motion.Drift ? meta.R : height;
+
+                var spots = new List<float[]>();
+                if (points != null)
+                    foreach (object pt in points) spots.Add(ToVector3(pt));
+                else if (origins != null)
+                    foreach (object origin in origins)
+                        for (int i = 0; i < count; i++) spots.Add(ToVector3(origin));
+                else
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (spread != null)
+                            spots.Add(new[]
+                            {
+                                centre[0] + (rng.Next() - 0.5f) * 2f * spread[0],
+                                centre[1] + rng.Next() * spread[1],
+                                centre[2] + (rng.Next() - 0.5f) * 2f * spread[2],
+                            });
+                        else
+                        {
+                            float angle = rng.Next() * 6.28f;
+                            float radius = Mathf.Sqrt(rng.Next()) * meta.R * (mode == "shaft" ? 0.7f : 1f);
+                            float y = mode == "fog" ? 0.05f + rng.Next() * 0.22f
+                                : mode == "shaft" ? meta.top * 0.55f
+                                : 0.06f + rng.Next() * (meta.top + 0.3f);
+                            spots.Add(new[] { Mathf.Cos(angle) * radius, y, Mathf.Sin(angle) * radius });
+                        }
+                    }
+
+                foreach (float[] spot in spots)
+                {
+                    if (mode == "fog")
+                    {
+                        Put(into, spot, 0.3f + rng.Next() * 0.25f, 0.035f, 0.3f + rng.Next() * 0.25f,
+                            alpha, motion, param, colours, rng);
+                    }
+                    else if (mode == "shaft")
+                    {
+                        Put(into, spot, 0.07f + rng.Next() * 0.06f, meta.top * 0.75f,
+                            0.07f + rng.Next() * 0.06f, alpha, motion, param, colours, rng);
+                    }
+                    else
+                    {
+                        float k = meta.h * (mode == "smoke" ? 0.9f : 0.28f + rng.Next() * 0.14f);
+                        Put(into, spot, k, k, k, alpha, motion, param, colours, rng);
+                        if (halo) Put(into, spot, k * 5.5f, k * 5.5f, k * 5.5f, 0.18f, motion, param, colours, rng);
+                    }
+                }
+            }
+        }
+
+        static void Put(List<Surfel> into, float[] spot, float sx, float sy, float sz, float alpha,
+            int motion, float param, string[] colours, Rng rng)
+        {
+            string hex = colours[Mathf.Min(colours.Length - 1, (int)(rng.Next() * colours.Length))];
+            var colour = new Vector3(
+                Convert.ToInt32(hex.Substring(1, 2), 16) / 255f,
+                Convert.ToInt32(hex.Substring(3, 2), 16) / 255f,
+                Convert.ToInt32(hex.Substring(5, 2), 16) / 255f);
+
+            // translucent and unshaded, like the glow: the pass blends them over the picture
+            var flags = (SurfelFlags)((uint)SurfelFlags.Glow | ((uint)motion << 16) | (ParamByte(param) << 24));
+            into.Add(SurfelFactory.Scaled(new Vector3(spot[0], spot[1], spot[2]),
+                new Vector3(sx, sy, sz), Quaternion.identity, colour, flags, alpha));
+        }
+
+        // ---- a way into the json, for the nested arrays JsonUtility cannot read ------------
+
+        static class MiniJson
+        {
+            public static object Value(string text)
+            {
+                int i = 0;
+                return Read(text, ref i);
+            }
+
+            static void Space(string s, ref int i)
+            {
+                while (i < s.Length && char.IsWhiteSpace(s[i])) i++;
+            }
+
+            static object Read(string s, ref int i)
+            {
+                Space(s, ref i);
+                if (i >= s.Length) return null;
+                char c = s[i];
+                if (c == '{')
+                {
+                    var map = new Dictionary<string, object>();
+                    i++;
+                    Space(s, ref i);
+                    if (i < s.Length && s[i] == '}') { i++; return map; }
+                    while (i < s.Length)
+                    {
+                        Space(s, ref i);
+                        string key = Str(s, ref i);
+                        Space(s, ref i);
+                        if (i < s.Length && s[i] == ':') i++;
+                        map[key] = Read(s, ref i);
+                        Space(s, ref i);
+                        if (i < s.Length && s[i] == ',') { i++; continue; }
+                        if (i < s.Length && s[i] == '}') i++;
+                        return map;
+                    }
+                    return map;
+                }
+                if (c == '[')
+                {
+                    var list = new List<object>();
+                    i++;
+                    Space(s, ref i);
+                    if (i < s.Length && s[i] == ']') { i++; return list; }
+                    while (i < s.Length)
+                    {
+                        list.Add(Read(s, ref i));
+                        Space(s, ref i);
+                        if (i < s.Length && s[i] == ',') { i++; continue; }
+                        if (i < s.Length && s[i] == ']') i++;
+                        return list;
+                    }
+                    return list;
+                }
+                if (c == '"') return Str(s, ref i);
+                if (string.CompareOrdinal(s, i, "true", 0, 4) == 0) { i += 4; return true; }
+                if (string.CompareOrdinal(s, i, "false", 0, 5) == 0) { i += 5; return false; }
+                if (string.CompareOrdinal(s, i, "null", 0, 4) == 0) { i += 4; return null; }
+
+                int start = i;
+                while (i < s.Length && (char.IsDigit(s[i]) || s[i] == '-' || s[i] == '+' ||
+                                        s[i] == '.' || s[i] == 'e' || s[i] == 'E')) i++;
+                if (i == start) { i++; return 0.0; }
+                return double.Parse(s.Substring(start, i - start), CultureInfo.InvariantCulture);
+            }
+
+            static string Str(string s, ref int i)
+            {
+                if (i < s.Length && s[i] == '"') i++;
+                int start = i;
+                while (i < s.Length && s[i] != '"') i++;
+                string text = s.Substring(start, Mathf.Max(0, i - start));
+                if (i < s.Length) i++;
+                return text;
+            }
+        }
+
+        static float Number(Dictionary<string, object> map, string key, float fallback) =>
+            map.TryGetValue(key, out object v) && v is double d ? (float)d : fallback;
+
+        static string Text(Dictionary<string, object> map, string key) =>
+            map.TryGetValue(key, out object v) && v is string t ? t : "";
+
+        static bool Flag(Dictionary<string, object> map, string key) =>
+            map.TryGetValue(key, out object v) && v is bool b && b;
+
+        static List<object> List(Dictionary<string, object> map, string key) =>
+            map.TryGetValue(key, out object v) ? v as List<object> : null;
+
+        static float[] Vector(Dictionary<string, object> map, string key)
+        {
+            List<object> list = List(map, key);
+            if (list == null || list.Count < 2) return null;
+            var out3 = new float[3];
+            for (int i = 0; i < 3 && i < list.Count; i++) out3[i] = (float)(double)list[i];
+            return out3;
+        }
+
+        static float[] ToVector3(object value)
+        {
+            if (value is List<object> list && list.Count >= 3)
+                return new[] { (float)(double)list[0], (float)(double)list[1], (float)(double)list[2] };
+            return new float[3];
+        }
+
+        static string[] Texts(Dictionary<string, object> map, string key)
+        {
+            List<object> list = List(map, key);
+            if (list == null) return Array.Empty<string>();
+            var outList = new List<string>(list.Count);
+            foreach (object item in list)
+                if (item is string text) outList.Add(text);
+            return outList.ToArray();
         }
 
         public static Surfel[] ParseBytes(byte[] blob)

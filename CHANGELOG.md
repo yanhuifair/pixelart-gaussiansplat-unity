@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0] - 2026-11-23
+
+The moving things: embers, smoke, fireflies, drifting sand.
+
+- `DioImport` now expands a world's `particles` too — the same lcg and the same order as the browser,
+  so the specks land where they do there. They are translucent, tagged with a motion id in flags bits
+  16..23 and one parameter in 24..31, and the scene's halos get the `pulse` motion.
+- The splat shader animates them from their index and the clock, vertex-side: no CPU work, no extra
+  buffers. Rise, smoke, blink, twinkle, drift, float, fog, shaft, ray, pulse.
+- `PixelArtSplatFeature.TimeOverride` poses the clock, for a still or a test.
+- `leaf` and `beam` are not carried yet: they need a per-splat centre.
+
 ## [1.3.0] - 2026-11-23
 
 The look moved onto the renderer feature, next to the pass it drives.
