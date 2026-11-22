@@ -126,7 +126,6 @@ namespace PixelArtSplats.EditorTools
             int n = meta.count;
             int nFree = Mathf.Max(0, meta.free);
             int off = 8 + jsonLength;
-            int stride = Surfel.Stride;
 
             // free splats come last and are laid out after the surfels' three arrays
             // 20 bytes per surfel: 12 of position, 4 of normal, 4 of colour

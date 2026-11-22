@@ -75,9 +75,17 @@ Everything on `Pixel Art Settings`:
 `cullBackfaces`) that only matter for splats that are not baked — imported meshes, mostly.
 
 The same panel the [browser viewer](https://splats.cobanov.dev/) puts over the picture comes with the
-package: add `Pixel Art Hud` to the camera. It draws in the game view (edit mode too), writes the
-same fields above, and uses the site's keys — **H** hides it, **Q** palette, **X** hard pixels,
-**S** 2×2 supersample, **E** outline, **O** auto orbit.
+package. Two ways to get it:
+
+- **While authoring:** `Pixel Art Splats → Hud` opens it in a dock. It edits the selected camera and
+  repaints the views as you drag, so the picture follows in edit mode.
+- **While playing:** add `Pixel Art Hud` to the camera. It draws over the game view and takes the
+  site's keys — **H** hides it, **Q** palette, **X** hard pixels, **S** 2×2 supersample, **E**
+  outline, **O** auto orbit.
+
+> An `OnGUI` on a component is not called every frame in edit mode: Unity only runs it when the game
+> view receives an event. That is why the dock exists — and why the overlay can look absent until you
+> move the mouse over the game view.
 
 ## Authoring
 

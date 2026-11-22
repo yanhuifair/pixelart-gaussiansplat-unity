@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1] - 2026-11-23
+
+The panel, in a dock, so it works while you author.
+
+- `Pixel Art Splats → Hud` opens an `EditorWindow` with the same controls. It targets the selected
+  camera, marks the objects dirty and repaints the game view on every change.
+- The drawing moved into `PixelArtPanel`, which both the window and the in-game hud call.
+- The hud's own `OnGUI` still only redraws in edit mode when the game view gets an event (Unity's
+  rule for `ExecuteInEditMode`), which is what the window is for.
+
 ## [1.2.0] - 2026-11-23
 
 The browser viewer's settings panel, in the engine.
