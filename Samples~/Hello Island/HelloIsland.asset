@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b943eeb9b3f4c6c85b1ae8dd4d80a8, type: 3}
+  m_Name: HelloIsland
+  m_EditorClassIdentifier: 
+  data: {fileID: 4900000, guid: b44c7ee81187c42368f955bfe720a40a, type: 3}
+  count: 55682
+  opaqueCount: 55679
+  spacing: 0.0215
+  bounds:
+    m_Center: {x: 0.061214685, y: -0.14064968, z: -0.10747385}
+    m_Extent: {x: 1.747772, y: 1.4520278, z: 1.6671989}
+  note: src/authoring/scenes/hello.js

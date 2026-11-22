@@ -1,0 +1,9 @@
+.DS_Store
+*.tgz
+
+# A trailing ~ tells Unity "do not import". It does NOT mean "ignore in git" — but a global
+# "*~" rule matches these folder names, so they have to be re-included explicitly.
+!Samples~/
+!Samples~/**
+!Documentation~/
+!Documentation~/**
