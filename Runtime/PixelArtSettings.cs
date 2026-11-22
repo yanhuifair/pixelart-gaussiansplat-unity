@@ -14,7 +14,7 @@ namespace PixelArtSplats
 
         [Header("Pixel grid")]
         [Tooltip("Screen pixels per art pixel. Fixed to the screen, so zooming never changes a pixel's size.")]
-        [Range(1, 16)] public int pixelSize = 4;
+        [Range(1, 16)] public int pixelSize = 5;
 
         [Tooltip("Draw at twice the art resolution: four samples per art pixel, which the pass votes over.")]
         public bool supersample = true;

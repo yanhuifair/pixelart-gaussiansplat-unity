@@ -16,6 +16,9 @@ namespace PixelArtSplats.EditorTools
         /// <summary>Where baked output goes in the user's project (the package itself lives in Packages/).</summary>
         public const string Root = "Assets/Pixel Art Splats";
 
+        /// <summary>Splat radius as a fraction of the spacing for mesh bakes (see <see cref="FromMeshes"/>).</summary>
+        public const float MeshRadiusPerSpacing = 0.9f;
+
         // ---- assets ---------------------------------------------------------------
 
         public static SplatCloudAsset CreateCloud(string name, Surfel[] surfels, float spacing,
@@ -111,7 +114,9 @@ namespace PixelArtSplats.EditorTools
 
             float h = Mathf.Sqrt(totalArea / Mathf.Max(1, targetCount));
             spacing = h;
-            float radius = h * Surfel.RadiusPerSpacing;
+            // scattered points are less regular than a sampled lattice, so they need more overlap or
+            // small clusters leave pinholes; the Godot addon bakes meshes with the same 0.9
+            float radius = h * MeshRadiusPerSpacing;
             var rng = new Rng(12345);
             var outList = new List<Surfel>(targetCount + 1024);
             bounds = new Bounds();
