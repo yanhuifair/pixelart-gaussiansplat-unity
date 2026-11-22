@@ -46,22 +46,28 @@ namespace PixelArtSplats.EditorTools
                 var data = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path);
                 if (data == null) continue;
 
-                bool present = false;
+                PixelArtSplatFeature existing = null;
                 foreach (ScriptableRendererFeature f in data.rendererFeatures)
-                    if (f is PixelArtSplatFeature) present = true;
-                if (present) continue;
+                    if (f is PixelArtSplatFeature feature) existing = feature;
+                if (existing != null)
+                {
+                    // installed already: make sure it still has its shaders and a palette
+                    Tidy(existing);
+                    continue;
+                }
 
-                var feature = ScriptableObject.CreateInstance<PixelArtSplatFeature>();
-                feature.name = "Pixel Art Splats";
-                feature.splatShader = Shader.Find("PixelArtSplats/Surfel");
-                feature.compositeShader = Shader.Find("PixelArtSplats/Composite");
-                feature.passEvent = RenderPassEvent.AfterRenderingPostProcessing;
-                AssetDatabase.AddObjectToAsset(feature, data);
+                var created = ScriptableObject.CreateInstance<PixelArtSplatFeature>();
+                created.name = "Pixel Art Splats";
+                created.splatShader = Shader.Find("PixelArtSplats/Surfel");
+                created.compositeShader = Shader.Find("PixelArtSplats/Composite");
+                created.passEvent = RenderPassEvent.AfterRenderingPostProcessing;
+                AssetDatabase.AddObjectToAsset(created, data);
+                Tidy(created);
 
                 var so = new SerializedObject(data);
                 SerializedProperty list = so.FindProperty("m_RendererFeatures");
                 list.arraySize++;
-                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = feature;
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = created;
                 SerializedProperty map = so.FindProperty("m_RendererFeatureMap");
                 if (map != null)
                 {
@@ -75,6 +81,21 @@ namespace PixelArtSplats.EditorTools
                 Debug.Log($"Pixel art splats: added the pass to {path}");
             }
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>Fill in what a hand-made or upgraded feature is missing.</summary>
+        static void Tidy(PixelArtSplatFeature feature)
+        {
+            if (feature.splatShader == null) feature.splatShader = Shader.Find("PixelArtSplats/Surfel");
+            if (feature.compositeShader == null) feature.compositeShader = Shader.Find("PixelArtSplats/Composite");
+
+            if (feature.Settings.palette != null) return;
+            string[] palettes = AssetDatabase.FindAssets("t:PixelArtPalette");
+            if (palettes.Length == 0) return;
+            string path = AssetDatabase.GUIDToAssetPath(palettes[0]);
+            feature.Settings.palette = AssetDatabase.LoadAssetAtPath<PixelArtPalette>(path);
+            EditorUtility.SetDirty(feature);
+            Debug.Log($"Pixel art splats: gave the feature the palette at {path}");
         }
 
         // ---- demo ------------------------------------------------------------------
@@ -119,14 +140,7 @@ namespace PixelArtSplats.EditorTools
             urp.renderPostProcessing = false;
             urp.renderShadows = false;
 
-            var settings = camGo.AddComponent<PixelArtSettings>();
-            settings.palette = palette;
-            settings.pixelSize = 5;
-            settings.supersample = true;
-            settings.crisp = true;
-            settings.outline = true;
-            settings.quantise = true;
-            settings.dither = 0f;
+            CaravanDemo.ApplyLook(palette, 5);
 
             var orbit = camGo.AddComponent<OrbitCamera>();
             orbit.target = new Vector3(0f, -0.02f, 0f);

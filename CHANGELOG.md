@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0] - 2026-11-23
+
+The look moved onto the renderer feature, next to the pass it drives.
+
+- `PixelArtSettings` is now plain serialized data held by `PixelArtSplatFeature`, so the palette, the
+  pixel grid and the switches are edited in the URP renderer asset under **Renderer Features → Pixel
+  Art Splats**. There is no camera component any more.
+- A feature with no palette paints with the built-in default palette instead of drawing nothing, and
+  `Install Renderer Feature` fills in the first palette it finds in the project.
+- The hud and the editor window edit whichever feature is drawing.
+- BREAKING: the `Pixel Art Settings` component is gone. Scenes that had one lose it (the look comes
+  from the renderer asset now); the sample no longer needs anything on the camera.
+
 ## [1.2.1] - 2026-11-23
 
 The panel, in a dock, so it works while you author.

@@ -1,15 +1,16 @@
+using System;
 using UnityEngine;
 
 namespace PixelArtSplats
 {
     /// <summary>
-    /// The look, per camera. Put this on the camera that should draw splats as pixel art and the
-    /// renderer feature picks it up.
+    /// The look, as data. It lives on <see cref="PixelArtSplatFeature"/>, so it is edited in the URP
+    /// renderer asset under Renderer Features, next to the pass it drives.
     /// </summary>
-    [RequireComponent(typeof(Camera))]
-    [ExecuteAlways]
-    public class PixelArtSettings : MonoBehaviour
+    [Serializable]
+    public class PixelArtSettings
     {
+        [Tooltip("The colours the picture may use, and the background it is drawn on.")]
         public PixelArtPalette palette;
 
         [Header("Pixel grid")]
@@ -38,6 +39,5 @@ namespace PixelArtSplats
 
         [Tooltip("Show the small splat render on its own, without the pixel pass. For checking.")]
         public bool debugRawSplat = false;
-
     }
 }

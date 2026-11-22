@@ -38,17 +38,19 @@ Then, once per project, register the pass in your URP renderers:
 Pixel Art Splats → Setup → Install Renderer Feature
 ```
 
-Cameras without a `Pixel Art Settings` component render normally, so leaving it installed is safe.
+Leaving it installed is safe: a camera only gets the pass when something is actually drawn, and the
+look lives on the feature itself.
 
 ## Quick start
 
 1. **Install the pass** — menu `Pixel Art Splats → Setup → Install Renderer Feature`. It adds the
    feature to every URP renderer in the project (only needs doing once per project; re-running it is
-   safe).
-2. **Palette** — `Assets → Create → Pixel Art Splats → Palette`, or use the one in the sample.
-   Hex strings, in display space. The background must be one of the surface colours.
-3. **Camera** — add `Pixel Art Settings` to the camera and set the palette. No settings component,
-   no pixel pass: the camera renders normally, so you can mix cameras freely.
+   safe, and it fills in a palette if the feature has none).
+2. **The look** — select your URP renderer asset (`Assets/Settings/URP-*-Renderer`), open
+   **Renderer Features → Pixel Art Splats** and set the palette and the switches right there. The
+   palette is an asset: `Assets → Create → Pixel Art Splats → Palette`, hex strings in display space,
+   the background must be one of the surface colours.
+3. **Camera** — nothing to add. Any camera that renders the scene gets the pass.
 4. **Splats** — put `Splat Renderer` on a GameObject and give it a splat cloud. Or make one:
    - select a mesh → `Pixel Art Splats → Bake → Bake Selected Meshes To Splat Cloud`
    - select a `.dio` world (the browser project's format) or a `.bytes` blob →
@@ -58,7 +60,7 @@ Cameras without a `Pixel Art Settings` component render normally, so leaving it 
 
 ## The look
 
-Everything on `Pixel Art Settings`:
+Everything on the feature, under **Renderer Features → Pixel Art Splats → Look**:
 
 | Field | What it does |
 |---|---|
@@ -71,7 +73,7 @@ Everything on `Pixel Art Settings`:
 | `minTexels` | Grows tiny distant splats so surfaces do not fall apart. |
 | `debugRawSplat` | Show the small splat render on its own. |
 
-`Splat Renderer` holds the cloud plus live-lighting knobs (`exposure`, `bands` for cel steps, `fog`,
+`Splat Renderer` (on a GameObject, per cloud) holds the cloud plus live-lighting knobs (`exposure`, `bands` for cel steps, `fog`,
 `cullBackfaces`) that only matter for splats that are not baked — imported meshes, mostly.
 
 The same panel the [browser viewer](https://splats.cobanov.dev/) puts over the picture comes with the

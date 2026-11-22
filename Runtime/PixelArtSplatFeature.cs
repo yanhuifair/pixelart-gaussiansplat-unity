@@ -9,8 +9,8 @@ namespace PixelArtSplats
     /// <summary>
     /// Draws every <see cref="SplatRenderer"/> into one low-resolution buffer, then turns that
     /// buffer into pixel art and puts it back on the screen.
-    /// <para>Add this to the URP renderer (Assets/Settings/URP-Balanced-Renderer.asset) and put a
-    /// <see cref="PixelArtSettings"/> on the camera.</para>
+    /// <para>Add this to the URP renderer asset (it appears under Renderer Features) and set the look
+    /// right here: the palette, the pixel grid and the switches all live on the feature.</para>
     /// </summary>
     public class PixelArtSplatFeature : ScriptableRendererFeature
     {
@@ -20,7 +20,77 @@ namespace PixelArtSplats
         [Tooltip("Must be after post processing: the pass replaces the whole picture.")]
         public RenderPassEvent passEvent = RenderPassEvent.AfterRenderingPostProcessing;
 
+        [Header("Look")]
+        [Tooltip("The palette, the pixel grid and the switches. The hud and the editor window edit these.")]
+        public PixelArtSettings settings = new PixelArtSettings();
+
         PixelArtPass _pass;
+
+        static readonly List<PixelArtSplatFeature> s_all = new List<PixelArtSplatFeature>();
+
+        /// <summary>Every instance loaded, so the editor can find one to edit.</summary>
+        public static IReadOnlyList<PixelArtSplatFeature> All => s_all;
+
+        /// <summary>The instance that last drew a picture: the one the panel edits.</summary>
+        public static PixelArtSplatFeature LastRendered { get; private set; }
+
+        /// <summary>The feature that is drawing, or any loaded one: what the panel edits.</summary>
+        public static PixelArtSplatFeature Current
+        {
+            get
+            {
+                if (LastRendered != null) return LastRendered;
+                foreach (PixelArtSplatFeature feature in s_all)
+                    if (feature != null) return feature;
+                return null;
+            }
+        }
+
+        /// <summary>The look in force, for the hud and the editor window.</summary>
+        public static PixelArtSettings CurrentSettings
+        {
+            get
+            {
+                PixelArtSplatFeature feature = Current;
+                return feature != null ? feature.Settings : null;
+            }
+        }
+
+        /// <summary>Never null: an asset made before this field existed gets a fresh one.</summary>
+        public PixelArtSettings Settings => settings != null ? settings : settings = new PixelArtSettings();
+
+        static PixelArtPalette s_fallback;
+        static bool s_warned;
+
+        /// <summary>
+        /// The palette to paint with: the one on the settings, or the built-in default, so a fresh
+        /// install draws something instead of nothing.
+        /// </summary>
+        public PixelArtPalette Palette
+        {
+            get
+            {
+                if (Settings.palette != null) return Settings.palette;
+                if (!s_warned)
+                {
+                    s_warned = true;
+                    Debug.LogWarning("Pixel art splats: the renderer feature has no palette. " +
+                                     "Using the default one — assign yours under Renderer Features.", this);
+                }
+                return s_fallback != null ? s_fallback : s_fallback = ScriptableObject.CreateInstance<PixelArtPalette>();
+            }
+        }
+
+        void OnEnable()
+        {
+            if (!s_all.Contains(this)) s_all.Add(this);
+        }
+
+        void OnDisable()
+        {
+            s_all.Remove(this);
+            if (LastRendered == this) LastRendered = null;
+        }
 
         public override void Create()
         {
@@ -36,12 +106,11 @@ namespace PixelArtSplats
             CameraType type = renderingData.cameraData.cameraType;
             if (type != CameraType.Game && type != CameraType.SceneView && type != CameraType.Preview) return;
 
-            Camera cam = renderingData.cameraData.camera;
-            PixelArtSettings settings = cam.GetComponent<PixelArtSettings>();
-            if (settings == null || settings.palette == null) return;
             if (SplatRenderer.Active.Count == 0) return;
 
-            _pass.settings = settings;
+            LastRendered = this;
+            _pass.settings = Settings;
+            _pass.palette = Palette;
             renderer.EnqueuePass(_pass);
         }
 
@@ -80,6 +149,7 @@ namespace PixelArtSplats
             static readonly Vector3 DefaultSun = new Vector3(0.45f, 0.8f, 0.4f).normalized;
 
             public PixelArtSettings settings;
+            public PixelArtPalette palette;
 
             Material _splat;
             Material _composite;
@@ -299,7 +369,7 @@ namespace PixelArtSplats
 
             void UpdatePalette(CommandBuffer cmd)
             {
-                settings.palette.Resolve(_colors, out int surfaceCount, out Color background);
+                palette.Resolve(_colors, out int surfaceCount, out Color background);
                 int total = Mathf.Min(_colors.Count, 64);
                 for (int i = 0; i < 64; i++)
                 {

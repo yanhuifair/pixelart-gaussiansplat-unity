@@ -5,76 +5,71 @@ using UnityEngine;
 namespace PixelArtSplats.EditorTools
 {
     /// <summary>
-    /// The same panel, in a dock, for edit mode. IMGUI on a component only redraws in edit mode when
-    /// the game view receives an event (Unity's rule for ExecuteInEditMode), so authoring wants a
-    /// window: this one repaints itself and the game view whenever a value moves.
+    /// The same panel the renderer feature holds, in a dock. IMGUI on a component only redraws in edit
+    /// mode when the game view receives an event (Unity's rule for ExecuteInEditMode), so the overlay
+    /// can look absent while authoring; this window repaints itself and the views on every change.
     /// </summary>
     public class PixelArtHudWindow : EditorWindow
     {
-        Camera _camera;
+        Vector2 _scroll;
 
         [MenuItem("Pixel Art Splats/Hud", priority = 2)]
         public static void Open()
         {
             var window = GetWindow<PixelArtHudWindow>();
             window.titleContent = new GUIContent("Pixel Art");
-            window.minSize = new Vector2(260f, 320f);
+            window.minSize = new Vector2(280f, 340f);
             window.Show();
         }
 
-        void OnEnable()
+        void OnInspectorUpdate()
         {
-            if (_camera == null) _camera = Pick(out PixelArtSettings _);
-        }
-
-        void OnSelectionChange()
-        {
-            if (Selection.activeGameObject != null &&
-                Selection.activeGameObject.GetComponent<PixelArtSettings>() != null)
-            {
-                _camera = Selection.activeGameObject.GetComponent<Camera>();
-                Repaint();
-            }
+            Repaint(); // which feature is rendering can change with the camera
         }
 
         void OnGUI()
         {
-            _camera = (Camera)EditorGUILayout.ObjectField("Camera", _camera, typeof(Camera), true);
-
-            PixelArtSettings settings = _camera != null ? _camera.GetComponent<PixelArtSettings>() : null;
-            if (settings == null)
+            PixelArtSplatFeature feature = PixelArtSplatFeature.Current;
+            if (feature == null)
             {
                 EditorGUILayout.HelpBox(
-                    "Pick a camera with a Pixel Art Settings component, or select one in the scene.\n\n" +
-                    "Menu: Pixel Art Splats → Setup → Install Renderer Feature, then add Pixel Art Settings " +
-                    "to the camera.", MessageType.Info);
-                if (GUILayout.Button("Use the camera with splat settings")) _camera = Pick(out _);
+                    "No Pixel Art Splats feature is loaded.\n\n" +
+                    "Add it under Renderer Features: Pixel Art Splats → Setup → Install Renderer Feature.",
+                    MessageType.Info);
+                if (GUILayout.Button("Install it in this project's URP renderers"))
+                    PixelArtSetup.InstallFeature();
                 return;
             }
 
-            var orbit = _camera.GetComponent<OrbitCamera>();
-            bool changed = PixelArtPanel.Draw(settings, orbit, Mathf.Max(240f, position.width - 24f));
+            string path = AssetDatabase.GetAssetPath(feature);
+            EditorGUILayout.LabelField("Renderer feature", string.IsNullOrEmpty(path) ? feature.name : path,
+                EditorStyles.miniLabel);
+            EditorGUILayout.Space(2f);
 
+            OrbitCamera orbit = FindOrbit();
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+
+            // catch the state before a drag starts, so the change can be undone
+            if (Event.current.type == EventType.MouseDown) Undo.RecordObject(feature, "Pixel art look");
+            bool changed = PixelArtPanel.Draw(feature.Settings, orbit, Mathf.Max(240f, position.width - 24f));
+
+            EditorGUILayout.EndScrollView();
             if (!changed) return;
-            // in edit mode nothing re-renders on its own: say the asset changed and force a redraw
-            EditorUtility.SetDirty(settings);
-            if (orbit != null) EditorUtility.SetDirty(orbit);
-            foreach (SplatRenderer renderer in SplatRenderer.Active) EditorUtility.SetDirty(renderer);
+
+            EditorUtility.SetDirty(feature);
             InternalEditorUtility.RepaintAllViews();
         }
 
-        static Camera Pick(out PixelArtSettings settings)
+        static OrbitCamera FindOrbit()
         {
-            settings = null;
-            foreach (Camera camera in Resources.FindObjectsOfTypeAll<Camera>())
+            if (Selection.activeGameObject != null)
             {
-                if (camera.hideFlags != HideFlags.None) continue;
-                PixelArtSettings found = camera.GetComponent<PixelArtSettings>();
-                if (found == null) continue;
-                settings = found;
-                return camera;
+                var selected = Selection.activeGameObject.GetComponent<OrbitCamera>();
+                if (selected != null) return selected;
             }
-            return Camera.main;
+            foreach (OrbitCamera orbit in Resources.FindObjectsOfTypeAll<OrbitCamera>())
+                if (orbit.hideFlags == HideFlags.None) return orbit;
+            return null;
         }
     }
 }

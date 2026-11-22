@@ -79,14 +79,8 @@ namespace PixelArtSplats.EditorTools
             urp.renderPostProcessing = false;
             urp.renderShadows = false;
 
-            var settings = camGo.AddComponent<PixelArtSettings>();
-            settings.palette = palette;
-            settings.pixelSize = 7;      // 1600 / 7 is about the 230 art pixels the browser used
-            settings.supersample = true;
-            settings.crisp = true;
-            settings.outline = true;
-            settings.quantise = true;
-            settings.dither = 0f;
+            // the look lives on the renderer feature now, so it goes where the feature is installed
+            ApplyLook(palette, 7);      // 1600 / 7 is about the 230 art pixels the browser used
 
             // the same panel the browser viewer shows; H hides it
             camGo.AddComponent<PixelArtHud>();
@@ -114,6 +108,30 @@ namespace PixelArtSplats.EditorTools
             AssetDatabase.SaveAssets();
             Debug.Log($"Pixel art splats: wrote {ScenePath} — {surfels.Length} surfels, " +
                       $"{meta.palette?.Length ?? 0} palette colours");
+        }
+
+        /// <summary>
+        /// The palette and the pixel grid sit on the feature, and the project can have several URP
+        /// renderers, so write them wherever the feature was installed.
+        /// </summary>
+        public static void ApplyLook(PixelArtPalette palette, int pixelSize)
+        {
+            foreach (string guid in AssetDatabase.FindAssets("t:UniversalRendererData"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!path.StartsWith("Assets/")) continue;
+                var data = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path);
+                if (data == null) continue;
+                foreach (ScriptableRendererFeature feature in data.rendererFeatures)
+                {
+                    if (!(feature is PixelArtSplatFeature splats)) continue;
+                    splats.Settings.palette = palette;
+                    splats.Settings.pixelSize = pixelSize;
+                    EditorUtility.SetDirty(feature);
+                    EditorUtility.SetDirty(data);
+                }
+            }
+            AssetDatabase.SaveAssets();
         }
     }
 }
