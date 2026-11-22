@@ -10,13 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03b943eeb9b3f4c6c85b1ae8dd4d80a8, type: 3}
-  m_Name: HelloIsland
+  m_Name: Caravan
   m_EditorClassIdentifier: 
-  data: {fileID: 4900000, guid: b44c7ee81187c42368f955bfe720a40a, type: 3}
-  count: 55682
-  opaqueCount: 55679
-  spacing: 0.0215
+  data: {fileID: 4900000, guid: 07c094194297c4dbca5d6b8cf968cde9, type: 3}
+  count: 147769
+  opaqueCount: 147760
+  spacing: 0.02
   bounds:
-    m_Center: {x: 0.061214685, y: -0.14064968, z: -0.10747385}
-    m_Extent: {x: 1.747772, y: 1.4520278, z: 1.6671989}
-  note: src/authoring/scenes/hello.js
+    m_Center: {x: 0.07896948, y: 3.9464025, z: -0.0777092}
+    m_Extent: {x: 2.090508, y: 6.2206717, z: 2.4849734}
+  note: 'caravan camp, imported from caravan.dio: 139358 surfels and 8411 free splats,
+    baked'

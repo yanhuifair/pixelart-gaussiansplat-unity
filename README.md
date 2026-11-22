@@ -10,7 +10,7 @@ palette, no soft splat mush.
 
 | | |
 |---|---|
-| ![Hello island](Documentation~/hello-island.png) | Floating island, 55 682 surfels, baked lighting, 12 colours. |
+| ![Caravan camp](Documentation~/caravan.png) | Caravan camp, 147 769 surfels, baked lighting, 16 colours — the same world the [Godot addon](https://github.com/yanhuifair/pixelart-splats-godot) ships. |
 
 ## Install
 
@@ -23,9 +23,9 @@ the pass replaces the whole picture at the end of the frame.
 https://github.com/yanhuifair/pixelart-splats-unity.git
 ```
 
-Pin a version by appending `#v1.0.0`.
+Pin a version by appending `#v1.1.0`.
 
-**Tarball** — grab `com.fair.pixelart-splats-1.0.0.tgz` from the
+**Tarball** — grab `com.fair.pixelart-splats-1.1.0.tgz` from the
 [releases](https://github.com/yanhuifair/pixelart-splats-unity/releases) page, then
 *Add package from tarball…*.
 
@@ -49,9 +49,11 @@ Cameras without a `Pixel Art Settings` component render normally, so leaving it 
    Hex strings, in display space. The background must be one of the surface colours.
 3. **Camera** — add `Pixel Art Settings` to the camera and set the palette. No settings component,
    no pixel pass: the camera renders normally, so you can mix cameras freely.
-4. **Splats** — put `Splat Renderer` on a GameObject and give it a splat cloud. Or bake one:
-   - `Pixel Art Splats → Demo → Build Hello Island` (bakes the sample scene from code, ~15 s)
+4. **Splats** — put `Splat Renderer` on a GameObject and give it a splat cloud. Or make one:
    - select a mesh → `Pixel Art Splats → Bake → Bake Selected Meshes To Splat Cloud`
+   - select a `.dio` world (the browser project's format) or a `.bytes` blob →
+     `Import .dio Or .bytes As Splat Cloud…`
+   - `Pixel Art Splats → Demo → Build Caravan Camp…` rebuilds the sample from its `.dio`
 5. Press Play. `Pixel Art Splats → Render Still` renders the current camera to a PNG for a look check.
 
 ## The look
@@ -83,6 +85,10 @@ Three ways to get splats:
 - **Meshes** — `SurfelBaker.FromMeshes` scatters surfels over any triangle mesh by area (lattice on
   big triangles, jittered samples on small ones), taking colour from the material, its texture and
   vertex colours. Textures must be readable (Read/Write enabled in the import settings).
+- **Worlds from the browser** — `DioImport.ParseDio` reads a `.dio` (compact positions, int8
+  normals, rgb, then the free splats with their scale and quaternion) and `DioImport.Import` writes it
+  out as a cloud. It mirrors x on the way in: the browser and Godot are right handed, Unity is left
+  handed, and without that a scene comes out back to front.
 - **By hand** — build a `Surfel[]` yourself: position, two wide axes (length = radius), normal,
   colour, flags. `SurfelFactory.Disc / FromAxes / Scaled` do the maths.
 
@@ -91,8 +97,9 @@ Three ways to get splats:
 ```
 Runtime/   Surfel, SplatCloudAsset, SplatRenderer, PixelArtPalette, PixelArtSettings,
            PixelArtSplatFeature (the renderer feature and its pass), OrbitCamera
-Editor/    Sdf + Shape + SurfaceSampler, HelloScene (the sample scene), LightBaker,
-           SurfelBaker (assets + meshes), PixelArtSetup (menus)
+Editor/    Sdf + Shape + SurfaceSampler, HelloScene (scene from code), LightBaker,
+           SurfelBaker (assets + meshes), DioImport (.dio / .bytes), CaravanDemo (the sample),
+           PixelArtSetup (menus)
 Shaders/   SurfelSplat (the discs, two passes), PixelArtComposite (the pixel pass + enlarge)
 ```
 
@@ -105,6 +112,8 @@ Shaders/   SurfelSplat (the discs, two passes), PixelArtComposite (the pixel pas
   at 1.
 - Renderer features from a package cannot bake themselves into the project's URP assets: that is what
   the install menu is for. Run it after installing.
+- Splats baked inside Unity are in Unity's coordinates; worlds imported from `.dio` are mirrored on
+  the way in, so they read the same as they do in the browser or in the Godot addon.
 - Ported from [pixelart-gaussiansplat](https://github.com/cobanov/pixelart-gaussiansplat) (three.js +
   Spark). Not ported: particles, skinned animation, automatic palettes from a model's colours, light
   shafts data. See `Documentation~/port-notes.md`.

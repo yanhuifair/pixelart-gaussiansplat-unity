@@ -1,7 +1,7 @@
 {
   "name": "com.fair.pixelart-splats",
   "displayName": "Pixel Art Splats",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "unity": "2022.3",
   "description": "Gaussian surfels drawn as pixel art in URP. Surfaces become flat shaded discs, lit once at bake time or per frame, then voted into a small palette at a fixed pixel grid, with ink outlines, translucent light and optional ordered dithering. Includes the scene authoring tools (signed distance shapes, a surface sampler, baked lighting) and a mesh-to-splat baker.",
   "keywords": [
@@ -24,9 +24,9 @@
   },
   "samples": [
     {
-      "displayName": "Hello Island",
-      "description": "A floating island drawn as pixel art splats: a tree, a lantern with its glow, 1500 grass blades and drifting rocks. Open the scene and press Play.",
-      "path": "Samples~/Hello Island"
+      "displayName": "Caravan Camp",
+      "description": "A caravan camp at an oasis drawn as pixel art splats: a striped tent, a cooking fire with its glow, palms and a pond. 147 769 surfels, 16 colours. Open the scene and press Play.",
+      "path": "Samples~/Caravan Camp"
     }
   ]
 }

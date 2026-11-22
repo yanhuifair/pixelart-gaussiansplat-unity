@@ -8,7 +8,7 @@ switched off, and a fullscreen pass votes every 2×2 block of samples into one f
 Real 3D that reads as pixel art: crisp silhouettes, ink outlines, a small palette, none of the soft
 splat mush.
 
-![Hello island](hello-island.png)
+![Caravan camp](caravan.png)
 
 ## Requirements
 

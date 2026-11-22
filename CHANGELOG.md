@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0] - 2026-11-23
+
+The demo and the showcase are now the caravan camp, the same world the Godot addon ships.
+
+- `DioImport` reads a `.dio` world (or a raw `.bytes` blob) straight into a splat cloud, through the
+  menu or from code. It mirrors x on the way in, because the browser and Godot are right handed and
+  Unity is left handed: without that the scene comes out back to front.
+- `CaravanDemo` rebuilds the sample from its `.dio`, so the sample has a source.
+- Sample: Caravan Camp, 147 769 surfels, 16 colours (replaces Hello Island). `HelloScene` stays, so
+  the scene-from-code authoring path still has a worked example.
+
 ## [1.0.0] - 2026-11-23
 
 First release.

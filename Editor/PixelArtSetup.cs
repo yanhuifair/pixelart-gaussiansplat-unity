@@ -11,15 +11,19 @@ namespace PixelArtSplats.EditorTools
     /// <summary>Menus: install the pass, bake the demo, bake a model, render a still.</summary>
     public static class PixelArtSetup
     {
-        public const string DemoScenePath = SurfelBaker.Root + "/Demo/HelloIsland.unity";
+        public const string DemoScenePath = SurfelBaker.Root + "/Demo/Caravan.unity";
 
         /// <summary>The demo scene, wherever it is: freshly built, or imported from the package's samples.</summary>
         public static string FindDemoScene()
         {
             if (File.Exists(DemoScenePath)) return DemoScenePath;
             if (!Directory.Exists("Assets/Samples")) return null;
-            string[] found = Directory.GetFiles("Assets/Samples", "HelloIsland.unity", SearchOption.AllDirectories);
-            return found.Length > 0 ? found[0].Replace('\\', '/') : null;
+            foreach (string name in new[] { "Caravan.unity", "HelloIsland.unity" })
+            {
+                string[] found = Directory.GetFiles("Assets/Samples", name, SearchOption.AllDirectories);
+                if (found.Length > 0) return found[0].Replace('\\', '/');
+            }
+            return null;
         }
 
         // ---- install ---------------------------------------------------------------
@@ -194,8 +198,8 @@ namespace PixelArtSplats.EditorTools
             string scene = FindDemoScene();
             if (scene == null)
             {
-                Debug.LogError("Pixel art splats: no demo scene found. Run Demo → Build Hello Island, " +
-                               "or import the Hello Island sample from the Package Manager.");
+                Debug.LogError("Pixel art splats: no demo scene found. Run Demo → Build Caravan Camp…, " +
+                               "or import the Caravan Camp sample from the Package Manager.");
                 return;
             }
             EditorSceneManager.OpenScene(scene);

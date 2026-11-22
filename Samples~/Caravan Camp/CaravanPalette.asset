@@ -10,22 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b38be4a99ece4aaeafe34426058276e, type: 3}
-  m_Name: HelloPalette
+  m_Name: CaravanPalette
   m_EditorClassIdentifier: 
   surface:
-  - '#0a0a18'
-  - '#17152c'
-  - '#2b2740'
-  - '#4c4a60'
-  - '#807e92'
-  - '#4a2a26'
-  - '#1f4a38'
-  - '#4f9a4a'
-  - '#a8d860'
-  - '#c8372d'
-  - '#ffcf5a'
-  - '#fff1c0'
-  glow:
-  - '#4e3f3a'
-  - '#8a7356'
-  background: '#0a0a18'
+  - '#090c1f'
+  - '#161a38'
+  - '#2a2444'
+  - '#5a3a3c'
+  - '#8f5e44'
+  - '#c9935a'
+  - '#f2cf86'
+  - '#fff3c8'
+  - '#a8332e'
+  - '#5e1f33'
+  - '#1d4a40'
+  - '#3f8a4c'
+  - '#9ad15e'
+  - '#2f8f9c'
+  - '#8fe6e0'
+  - '#ff8a2a'
+  glow: []
+  background: '#090c1f'
