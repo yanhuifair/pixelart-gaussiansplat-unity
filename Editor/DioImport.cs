@@ -24,7 +24,15 @@ namespace PixelArtSplats.EditorTools
     {
         const uint Magic = 0x31445350; // "PSD1"
 
+        /// <summary>A lamp a scene declares: where it is, what colour, how strong.</summary>
         [Serializable]
+        public class Lamp
+        {
+            public float[] pos = new float[3];
+            public float[] color = { 1f, 1f, 1f };
+            public float power = 1f;
+        }
+
         public class Meta
         {
             public int count;
@@ -37,6 +45,7 @@ namespace PixelArtSplats.EditorTools
             public string[] palette;
             public string[] glowPalette;
             public string background;
+            public Lamp[] lights;
         }
 
         // the kinds the browser's scene kit writes on a free splat
@@ -118,6 +127,7 @@ namespace PixelArtSplats.EditorTools
             int jsonLength = BitConverter.ToInt32(blob, 4);
             string json = System.Text.Encoding.UTF8.GetString(blob, 8, jsonLength);
             meta = JsonUtility.FromJson<Meta>(json);
+            meta.lights = ParseLamps(json);
             if (meta == null)
             {
                 Debug.LogError("Pixel art splats: could not read the .dio metadata.");
@@ -360,6 +370,29 @@ namespace PixelArtSplats.EditorTools
             into.Add(surfel);
         }
 
+        static Lamp[] ParseLamps(string json)
+        {
+            int at = json.IndexOf("\"lights\"", StringComparison.Ordinal);
+            if (at < 0) return new Lamp[0];
+            int bracket = json.IndexOf('[', at);
+            if (bracket < 0) return new Lamp[0];
+            if (!(MiniJson.Value(json.Substring(bracket)) is List<object> list)) return new Lamp[0];
+
+            var lamps = new List<Lamp>(list.Count);
+            foreach (object entry in list)
+            {
+                if (!(entry is Dictionary<string, object> map)) continue;
+                var lamp = new Lamp
+                {
+                    pos = Vector(map, "pos") ?? new[] { 0f, 0f, 0f },
+                    color = Vector(map, "color") ?? new[] { 1f, 1f, 1f },
+                    power = Number(map, "power", 1f),
+                };
+                lamps.Add(lamp);
+            }
+            return lamps.ToArray();
+        }
+
         // ---- a way into the json, for the nested arrays JsonUtility cannot read ------------
 
         static class MiniJson
@@ -493,7 +526,7 @@ namespace PixelArtSplats.EditorTools
         }
 
         /// <summary>Reflect a surfel across the yz plane, turning a right-handed cloud left handed.</summary>
-        static Surfel Mirrored(Surfel s)
+        public static Surfel Mirrored(Surfel s)
         {
             s.pos.x = -s.pos.x;
             s.axis1.x = -s.axis1.x;

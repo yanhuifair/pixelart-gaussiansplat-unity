@@ -1,7 +1,7 @@
 {
   "name": "com.fair.pixelart-splats",
   "displayName": "Pixel Art Splats",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "unity": "2022.3",
   "description": "Gaussian surfels drawn as pixel art in URP. Surfaces become flat shaded discs, lit once at bake time or per frame, then voted into a small palette at a fixed pixel grid, with ink outlines, translucent light and optional ordered dithering. Includes the scene authoring tools (signed distance shapes, a surface sampler, baked lighting) and a mesh-to-splat baker.",
   "keywords": [

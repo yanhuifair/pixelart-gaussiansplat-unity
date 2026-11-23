@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.6.0] - 2026-11-23
+
+Converted models, and a palette for them.
+
+- `PsfImport` reads a `.psf` — a model the browser project converted from glTF — into a splat cloud
+  through the menu or from code. It recentres and scales the model to two units the way the viewer
+  does, and follows a companion `.dio`'s first lamp so the extracted palette picks up its warm tones.
+- `PixelArtPalette.Extract`: the viewer's k-means over the surface colours at the four brightness
+  levels the lighting produces. Same constants and the same result as the Godot addon, colour for
+  colour.
+- `DioImport.Meta.Lights`: a scene's lamps are parsed now (positions, colour, power), so a builder can
+  place real lights for the splats to be lit by.
+- `SplatRenderer.Rebuild()` is public: assigning a cloud from a script used to leave an empty buffer,
+  because `OnEnable` runs before the field is set.
+
+**Known:** a model lit live comes out darker here than in the Godot addon — same records, same sun,
+same shader text, and the two agree exactly on a handful of isolated splats. Still to chase.
+
 ## [1.5.0] - 2026-11-23
 
 The two motions that turn around a point — and **a fix: 1.4.0's particles never moved.**

@@ -51,7 +51,12 @@ namespace PixelArtSplats
             Rebuild();
         }
 
-        void Rebuild()
+        /// <summary>
+        /// Rebuild the GPU buffer from <see cref="cloud"/>. Call it after assigning a cloud from a
+        /// script: <c>OnEnable</c> only picks up what was serialised, and a component added at
+        /// runtime starts with an empty buffer.
+        /// </summary>
+        public void Rebuild()
         {
             _buffer?.Release();
             _buffer = null;

@@ -73,6 +73,9 @@ Everything on the feature, under **Renderer Features → Pixel Art Splats → Lo
 | `minTexels` | Grows tiny distant splats so surfaces do not fall apart. |
 | `debugRawSplat` | Show the small splat render on its own. |
 
+Assigning a cloud from a script? Call `SplatRenderer.Rebuild()` after it: `OnEnable` only picks up
+what was serialised, so a component added at runtime starts with an empty buffer.
+
 `Splat Renderer` (on a GameObject, per cloud) holds the cloud plus live-lighting knobs (`exposure`, `bands` for cel steps, `fog`,
 `cullBackfaces`) that only matter for splats that are not baked — imported meshes, mostly.
 
@@ -100,6 +103,15 @@ Three ways to get splats:
 - **Meshes** — `SurfelBaker.FromMeshes` scatters surfels over any triangle mesh by area (lattice on
   big triangles, jittered samples on small ones), taking colour from the material, its texture and
   vertex colours. Textures must be readable (Read/Write enabled in the import settings).
+- **Models from the browser** — `PsfImport.Parse` reads a `.psf` (a model the browser project
+  converted from glTF): surfaces, int8 normals with a material-flags byte, and the recentring and
+  2-unit scaling the viewer applies. Unlike a scene, a model is **not baked** — its colour is albedo
+  and the shader lights it, so it wants `bands` and a palette.
+- **A palette from the model's own colours** — `PixelArtPalette.Extract(colours, k, exposure, lamp)`
+  is the viewer's k-means: the surface colours under the four brightness levels the lighting will
+  produce, plus a lamp's warm tint. The Godot addon has the same function with the same constants and
+  returns the same hexes, so a model does not come out one colour in one engine and another in the
+  other.
 - **Worlds from the browser** — `DioImport.ParseDio` reads a `.dio` (compact positions, int8
   normals, rgb, then the free splats with their scale and quaternion) and `DioImport.Import` writes it
   out as a cloud. It mirrors x on the way in: the browser and Godot are right handed, Unity is left
@@ -113,8 +125,8 @@ Three ways to get splats:
 Runtime/   Surfel, SplatCloudAsset, SplatRenderer, PixelArtPalette, PixelArtSettings,
            PixelArtSplatFeature (the renderer feature and its pass), OrbitCamera, PixelArtHud
 Editor/    Sdf + Shape + SurfaceSampler, HelloScene (scene from code), LightBaker,
-           SurfelBaker (assets + meshes), DioImport (.dio / .bytes), CaravanDemo (the sample),
-           PixelArtSetup (menus)
+           SurfelBaker (assets + meshes), DioImport (.dio / .bytes), PsfImport (.psf models),
+           CaravanDemo (the sample), PixelArtSetup (menus)
 Shaders/   SurfelSplat (the discs, two passes), PixelArtComposite (the pixel pass + enlarge)
 ```
 
