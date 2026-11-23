@@ -137,10 +137,16 @@ expanded into splats at import, tagged with a motion id in the high bits of thei
 **in the vertex shader** from their index and the clock: nothing moves on the CPU, and the cloud stays
 one buffer. The same code animates the scene's own halos, so a fire breathes instead of sitting still.
 
+Two of the motions turn around a point rather than drifting on their own: `leaf` falls through a
+column above its centre, `beam` sweeps around it. Those splats carry the point in their **normal
+slot**, which is free because both are translucent and a translucent splat's normal is never read —
+the quad is spanned by the two wide axes alone. The 64-byte record is unchanged; only the meaning of
+one field depends on the motion.
+
 `PixelArtSplatFeature.TimeOverride` poses that clock at a fixed time, for a look check or a
 screenshot.
 - Ported from [pixelart-gaussiansplat](https://github.com/cobanov/pixelart-gaussiansplat) (three.js +
-  Spark). Not ported: the `leaf` and `beam` motions (they want a per-splat centre), skinned animation,
+  Spark). Not ported: skinned animation,
   automatic palettes from a model's colours. See `Documentation~/port-notes.md`.
 
 ## Shipping your own build

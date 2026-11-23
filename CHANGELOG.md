@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0] - 2026-11-23
+
+The two motions that turn around a point — and **a fix: 1.4.0's particles never moved.**
+
+- **1.4.0 was broken.** `SurfelFactory.Scaled` takes the flags as a `SurfelFlags` and its `Kind`
+  setter keeps only the low eight bits, so the motion id (bits 16..23) and its parameter (24..31) were
+  discarded on the way in. Every particle in the sample had motion 0. The ids are written after the
+  factory now, and the shipped sample has them.
+- `leaf` (leaves falling through a column) and `beam` (a lighthouse beam sweeping) are carried now.
+  They put their centre in the surfel's **normal slot**: both are translucent, and a translucent
+  splat's normal is never read, so the 64-byte record is untouched. A world that declares `splats`
+  (explicit shapes relative to a centre) generates those too.
+- The opaque/glow partition is stable now. `Array.Sort` may reorder equal elements, and the motions
+  hash on the splat index, so a shuffle gave every particle a different phase from the Godot addon.
+
 ## [1.4.0] - 2026-11-23
 
 The moving things: embers, smoke, fireflies, drifting sand.

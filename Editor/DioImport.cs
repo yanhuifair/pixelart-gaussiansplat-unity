@@ -198,7 +198,7 @@ namespace PixelArtSplats.EditorTools
         enum Motion
         {
             None = 0, Rise = 1, Float = 2, Blink = 3, Twinkle = 4, Drift = 5, Leaf = 6,
-            Smoke = 7, Fog = 8, Shaft = 9, Ray = 10, Pulse = 11,
+            Smoke = 7, Fog = 8, Shaft = 9, Ray = 10, Pulse = 11, Beam = 12,
         }
 
         static int MotionId(string mode) => mode switch
@@ -214,6 +214,7 @@ namespace PixelArtSplats.EditorTools
             "shaft" => (int)Motion.Shaft,
             "ray" => (int)Motion.Ray,
             "pulse" => (int)Motion.Pulse,
+            "beam" => (int)Motion.Beam,
             _ => 0,
         };
 
@@ -247,8 +248,7 @@ namespace PixelArtSplats.EditorTools
 
                 string mode = Flag(ps, "still") ? "twinkle" : Text(ps, "mode");
                 int motion = MotionId(mode);
-                // leaf would need a per-splat centre; the format does not carry one yet
-                if (motion == 0 || motion == (int)Motion.Leaf) continue;
+                if (motion == 0) continue;
 
                 int count = Mathf.Max(1, Mathf.RoundToInt(Number(ps, "n", 0f)));
                 float[] centre = Vector(ps, "center") ?? new float[3];
@@ -262,6 +262,31 @@ namespace PixelArtSplats.EditorTools
                 bool halo = Flag(ps, "halo");
                 float height = spread != null ? spread[1] : Number(ps, "height", 0.6f);
                 float param = motion == (int)Motion.Drift ? meta.R : height;
+
+                // leaf falls through a column above its centre, beam sweeps around it: those two
+                // carry the centre in the surfel's normal slot. Both are translucent, and a
+                // translucent splat's normal is never read, so the 64-byte record stays as it is.
+                Vector3? pivot = motion == (int)Motion.Leaf || motion == (int)Motion.Beam
+                    ? new Vector3(centre[0], centre[1], centre[2])
+                    : (Vector3?)null;
+
+                // explicit shapes, relative to the centre (the lighthouse beam): 8 numbers, the last
+                // four being a quaternion
+                List<object> shapes = List(ps, "splats");
+                if (shapes != null)
+                {
+                    foreach (object item in shapes)
+                    {
+                        if (!(item is List<object> b) || b.Count < 7) continue;
+                        float At(int i) => (float)(double)b[i];
+                        Quaternion rot = b.Count > 10
+                            ? new Quaternion(At(7), At(8), At(9), At(10))
+                            : Quaternion.identity;
+                        Put(into, new[] { centre[0] + At(0), centre[1] + At(1), centre[2] + At(2) },
+                            At(3), At(4), At(5), At(6), motion, param, colours, rng, pivot, rot);
+                    }
+                    continue;
+                }
 
                 var spots = new List<float[]>();
                 if (points != null)
@@ -295,25 +320,29 @@ namespace PixelArtSplats.EditorTools
                     if (mode == "fog")
                     {
                         Put(into, spot, 0.3f + rng.Next() * 0.25f, 0.035f, 0.3f + rng.Next() * 0.25f,
-                            alpha, motion, param, colours, rng);
+                            alpha, motion, param, colours, rng, pivot);
                     }
                     else if (mode == "shaft")
                     {
                         Put(into, spot, 0.07f + rng.Next() * 0.06f, meta.top * 0.75f,
-                            0.07f + rng.Next() * 0.06f, alpha, motion, param, colours, rng);
+                            0.07f + rng.Next() * 0.06f, alpha, motion, param, colours, rng, pivot);
                     }
                     else
                     {
                         float k = meta.h * (mode == "smoke" ? 0.9f : 0.28f + rng.Next() * 0.14f);
-                        Put(into, spot, k, k, k, alpha, motion, param, colours, rng);
-                        if (halo) Put(into, spot, k * 5.5f, k * 5.5f, k * 5.5f, 0.18f, motion, param, colours, rng);
+                        // a leaf is a flat flake: half as tall as it is wide
+                        Put(into, spot, k, mode == "leaf" ? k * 0.6f : k, k, alpha, motion, param,
+                            colours, rng, pivot);
+                        if (halo)
+                            Put(into, spot, k * 5.5f, k * 5.5f, k * 5.5f, 0.18f, motion, param,
+                                colours, rng, pivot);
                     }
                 }
             }
         }
 
         static void Put(List<Surfel> into, float[] spot, float sx, float sy, float sz, float alpha,
-            int motion, float param, string[] colours, Rng rng)
+            int motion, float param, string[] colours, Rng rng, Vector3? pivot, Quaternion? rot = null)
         {
             string hex = colours[Mathf.Min(colours.Length - 1, (int)(rng.Next() * colours.Length))];
             var colour = new Vector3(
@@ -322,9 +351,13 @@ namespace PixelArtSplats.EditorTools
                 Convert.ToInt32(hex.Substring(5, 2), 16) / 255f);
 
             // translucent and unshaded, like the glow: the pass blends them over the picture
-            var flags = (SurfelFlags)((uint)SurfelFlags.Glow | ((uint)motion << 16) | (ParamByte(param) << 24));
-            into.Add(SurfelFactory.Scaled(new Vector3(spot[0], spot[1], spot[2]),
-                new Vector3(sx, sy, sz), Quaternion.identity, colour, flags, alpha));
+            Surfel surfel = SurfelFactory.Scaled(new Vector3(spot[0], spot[1], spot[2]),
+                new Vector3(sx, sy, sz), rot ?? Quaternion.identity, colour, SurfelFlags.Glow, alpha);
+            // the motion id and its parameter live above the kind byte, and SurfelFactory's Kind
+            // setter keeps only the low eight bits, so they go in here
+            surfel.flags |= ((uint)motion << 16) | (ParamByte(param) << 24);
+            if (pivot.HasValue) surfel.normal = pivot.Value;   // leaf and beam turn around this
+            into.Add(surfel);
         }
 
         // ---- a way into the json, for the nested arrays JsonUtility cannot read ------------

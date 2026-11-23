@@ -56,11 +56,13 @@ float _PS_Time;
 #define PS_M_BLINK    3
 #define PS_M_TWINKLE  4
 #define PS_M_DRIFT    5
+#define PS_M_LEAF     6
 #define PS_M_SMOKE    7
 #define PS_M_FOG      8
 #define PS_M_SHAFT    9
 #define PS_M_RAY     10
 #define PS_M_PULSE   11
+#define PS_M_BEAM    12
 
 // brightness = ambient (darker from below, lighter from above) + key light
 #define AMBIENT_LOW  0.36
@@ -84,8 +86,11 @@ float3 Hash31(float p)
 
 // The moving things: embers, smoke, fireflies, drifting sand. Port of particles.js, driven by the
 // splat's index so nothing moves on the CPU. Motion id in flags bits 16..23, one parameter in 24..31.
-void AnimateSurfel(uint flags, uint index, float t, inout float3 centre, inout float3 axis1,
-                   inout float3 axis2, inout float alpha)
+// `pivot` is the splat's third axis, except for leaf and beam: those turn around a point, which the
+// importer leaves in that slot instead (both are translucent, and a translucent splat's normal is
+// never read). See DioImport.AddParticles.
+void AnimateSurfel(uint flags, uint index, float t, float3 pivot, inout float3 centre,
+                   inout float3 axis1, inout float3 axis2, inout float alpha)
 {
     int mode = (int)((flags >> 16) & 0xFFu);
     if (mode == 0) return;
@@ -162,6 +167,27 @@ void AnimateSurfel(uint flags, uint index, float t, inout float3 centre, inout f
         centre.z += 0.02 * cos(t * 0.17 + r.x * 6.0);
         alpha *= 0.8 + 0.2 * sin(t * 0.5 + r.y * 50.0);
     }
+    else if (mode == PS_M_LEAF)
+    {
+        // fall through a column of height `par` above the pivot, tumbling as it goes
+        float h = max(par, 0.01);
+        centre.y = pivot.y + frac((centre.y - pivot.y - t * 0.14 * (0.6 + r.x)) / h) * h;
+        float d = centre.y - pivot.y;
+        centre.x += 0.13 * sin(t * 0.9 + r.y * 40.0 + centre.y * 3.0);
+        centre.z += 0.11 * cos(t * 0.7 + r.z * 40.0 + centre.y * 2.5);
+        alpha *= smoothstep(0.0, 0.1, d) * (1.0 - smoothstep(h - 0.3, h, d));
+    }
+    else if (mode == PS_M_BEAM)
+    {
+        // sweep around the vertical through the pivot, and turn the beam with it
+        float ang = t * 0.7;
+        float cs = cos(ang);
+        float sn = sin(ang);
+        float3 d = centre - pivot;
+        centre = pivot + float3(cs * d.x + sn * d.z, d.y, -sn * d.x + cs * d.z);
+        axis1 = float3(cs * axis1.x + sn * axis1.z, axis1.y, -sn * axis1.x + cs * axis1.z);
+        axis2 = float3(cs * axis2.x + sn * axis2.z, axis2.y, -sn * axis2.x + cs * axis2.z);
+    }
 }
 
 float3 SwayOffset(SurfelData s)
@@ -176,7 +202,8 @@ float3 ShadeSurfel(SurfelData s, float3 pWS, float3 cWS, float3 camPos, out floa
     uint kind = s.flags & 0xFFu;
     alpha = ((s.flags >> 8) & 0xFFu) * (1.0 / 255.0);
 
-    float3 n = normalize(mul((float3x3)_PS_ObjToWorldIT, s.nrm));
+    // s.nrm is the pivot for leaf and beam; those are glow splats, so the shading normal is unused
+    float3 n = normalize(mul((float3x3)_PS_ObjToWorldIT, s.nrm) + float3(0.0, 0.0, 1e-6));
     float3 toCam = camPos - cWS;
     float dist = max(length(toCam), 1e-4);
     float facing = dot(n, toCam / dist);
@@ -238,7 +265,8 @@ bool ProjectSurfel(SurfelData s, float3 centre, float3 axis1, float3 axis2, floa
     positionCS = float4(0.0, 0.0, -2.0, 1.0);
     if (clipC.w <= 0.0001) return false;
 
-    float3 n = normalize(mul((float3x3)_PS_ObjToWorldIT, s.nrm));
+    // s.nrm is the pivot for leaf and beam; those are glow splats, so the shading normal is unused
+    float3 n = normalize(mul((float3x3)_PS_ObjToWorldIT, s.nrm) + float3(0.0, 0.0, 1e-6));
     float3 toCam = camPos - cWS;
     float facing = dot(n, toCam / max(length(toCam), 1e-4));
     bool twoSided = (kind & PS_TWO_SIDED) != 0;
@@ -279,7 +307,7 @@ Varyings VertSurfel(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID
     float3 axis1 = s.axis1;
     float3 axis2 = s.axis2;
     float fade = 1.0;
-    AnimateSurfel(s.flags, index, _PS_Time, centre, axis1, axis2, fade);
+    AnimateSurfel(s.flags, index, _PS_Time, s.nrm, centre, axis1, axis2, fade);
     if ((s.flags & PS_SWAY) != 0) centre += SwayOffset(s);
 
     float3 pObj = centre + uv.x * axis1 + uv.y * axis2;

@@ -75,10 +75,17 @@ namespace PixelArtSplats
 
         public static void Write(Surfel[] surfels, ref int opaqueCount)
         {
-            // opaque first, translucent light second: two draw calls, no sorting at runtime
-            Array.Sort(surfels, (a, b) => a.Has(SurfelFlags.Glow) == b.Has(SurfelFlags.Glow) ? 0 : (a.Has(SurfelFlags.Glow) ? 1 : -1));
-            opaqueCount = 0;
-            for (int i = 0; i < surfels.Length; i++) if (!surfels[i].Has(SurfelFlags.Glow)) opaqueCount = i + 1;
+            // opaque first, translucent light second: two draw calls, no sorting at runtime.
+            // A stable partition, not Array.Sort: the particles hash on their index, so shuffling
+            // equal elements would give each engine a different phase for the same speck.
+            var ordered = new Surfel[surfels.Length];
+            int at = 0;
+            for (int i = 0; i < surfels.Length; i++)
+                if (!surfels[i].Has(SurfelFlags.Glow)) ordered[at++] = surfels[i];
+            opaqueCount = at;
+            for (int i = 0; i < surfels.Length; i++)
+                if (surfels[i].Has(SurfelFlags.Glow)) ordered[at++] = surfels[i];
+            Array.Copy(ordered, surfels, surfels.Length);
         }
     }
 }
