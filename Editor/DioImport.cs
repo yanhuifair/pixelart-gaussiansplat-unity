@@ -535,6 +535,37 @@ namespace PixelArtSplats.EditorTools
             return s;
         }
 
+        /// <summary>
+        /// Place a scene's own lamps as <see cref="Light"/>s, so live-lit splats get the light the
+        /// browser gives them. The positions are mirrored with the cloud.
+        /// </summary>
+        public static GameObject BuildLamps(Meta meta, Transform parent)
+        {
+            if (meta?.lights == null || meta.lights.Length == 0) return null;
+            var root = new GameObject("Lamps");
+            if (parent != null) root.transform.SetParent(parent, false);
+            for (int i = 0; i < meta.lights.Length; i++)
+            {
+                Lamp lamp = meta.lights[i];
+                var go = new GameObject($"Lamp {i + 1}");
+                go.transform.SetParent(root.transform, false);
+                // same mirror the splats got: the browser and Godot are right handed
+                go.transform.localPosition = new Vector3(-lamp.pos[0], lamp.pos[1], lamp.pos[2]);
+
+                var light = go.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.shadows = LightShadows.None;
+                light.color = lamp.color.Length >= 3
+                    ? new Color(lamp.color[0], lamp.color[1], lamp.color[2])
+                    : Color.white;
+
+                var wiggle = go.AddComponent<PixelArtLamp>();
+                wiggle.power = lamp.power;
+                wiggle.index = i;
+            }
+            return root;
+        }
+
         public static Bounds BoundsOf(Surfel[] surfels)
         {
             var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);

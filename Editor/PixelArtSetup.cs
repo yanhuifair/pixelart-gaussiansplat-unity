@@ -148,6 +148,8 @@ namespace PixelArtSplats.EditorTools
             orbit.pitch = 10f;
             orbit.yaw = 202f;
             orbit.autoOrbit = true;
+            orbit.drift = OrbitCamera.DriftMode.Scene;
+            orbit.autoOrbitSpeed = 9.74f;   // the viewer's 0.17 rad/s for a scene
             orbit.Snap();
 
             // the sun the live-lit splats (grass, flowers) are shaded with: the same one the bake used

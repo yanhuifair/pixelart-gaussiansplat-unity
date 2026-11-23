@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.7.0] - 2026-11-23
+
+Lamps, and the viewer's camera move.
+
+- `DioImport.Meta.Lights` parses a scene's lamps (position, colour, power) and `DioImport.BuildLamps`
+  places them as `Light`s with a `PixelArtLamp`, which keeps each intensity at the world's `power`
+  and does the viewer's flicker (`0.86 + 0.1 sin 11t + 0.06 sin 23.7t`). The positions are mirrored
+  with the cloud.
+- `OrbitCamera.drift` follows the viewer's idle move: a scene breathes in and out
+  (`0.7 + 0.3 (0.5 + 0.5 cos 0.11t)`), a model sways by twelve percent, the height rides
+  `elev + 0.06 sin 0.2t`, and a portrait window steps back.
+- The demos drift at the viewer's 0.17 rad/s instead of 7 degrees a second.
+
+Not here yet: skinned models. The Godot addon plays them from a `.skin` sidecar and a `.rig` file;
+those files are shared, but the player and the shader are still to write on this side.
+
 ## [1.6.0] - 2026-11-23
 
 Converted models, and a palette for them.

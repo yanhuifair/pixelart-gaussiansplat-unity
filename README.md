@@ -73,6 +73,15 @@ Everything on the feature, under **Renderer Features → Pixel Art Splats → Lo
 | `minTexels` | Grows tiny distant splats so surfaces do not fall apart. |
 | `debugRawSplat` | Show the small splat render on its own. |
 
+**Lamps.** A scene's own lights are `DioImport.Meta.lights`; `DioImport.BuildLamps` places them as
+`Light`s with a `PixelArtLamp`, which keeps each one's intensity at the world's `power` and does the
+viewer's flicker. Only splats that are not baked are lit by them — a model on an island flickers, the
+baked island does not.
+
+**Camera.** `OrbitCamera.drift` follows the viewer's idle move: a scene breathes in and out
+(`0.7 + 0.3 (0.5 + 0.5 cos 0.11t)`), a model sways by twelve percent, the height rides
+`elev + 0.06 sin 0.2t`, and a portrait window steps back (`portraitFit`).
+
 Assigning a cloud from a script? Call `SplatRenderer.Rebuild()` after it: `OnEnable` only picks up
 what was serialised, so a component added at runtime starts with an empty buffer.
 
@@ -123,7 +132,8 @@ Three ways to get splats:
 
 ```
 Runtime/   Surfel, SplatCloudAsset, SplatRenderer, PixelArtPalette, PixelArtSettings,
-           PixelArtSplatFeature (the renderer feature and its pass), OrbitCamera, PixelArtHud
+           PixelArtSplatFeature (the renderer feature and its pass), OrbitCamera, PixelArtHud,
+           PixelArtLamp
 Editor/    Sdf + Shape + SurfaceSampler, HelloScene (scene from code), LightBaker,
            SurfelBaker (assets + meshes), DioImport (.dio / .bytes), PsfImport (.psf models),
            CaravanDemo (the sample), PixelArtSetup (menus)

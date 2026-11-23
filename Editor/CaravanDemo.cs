@@ -91,6 +91,8 @@ namespace PixelArtSplats.EditorTools
             orbit.pitch = 16.7f;
             orbit.yaw = 130f;            // 180 - the Godot scene's yaw: the import mirrors x, this is what that leaves
             orbit.autoOrbit = true;
+            orbit.drift = OrbitCamera.DriftMode.Scene;
+            orbit.autoOrbitSpeed = 9.74f;   // the viewer's 0.17 rad/s for a scene
             orbit.Snap();
 
             var sunGo = new GameObject("Sun");
